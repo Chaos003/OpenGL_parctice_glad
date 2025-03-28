@@ -1,2 +1,4 @@
 ﻿  Application.cpp
+D:\openGL\OpenGL\OpenGL\src\Application.cpp(275,25): warning C4244: “初始化”: 从“double”转换到“float”，可能丢失数据
+  glad.c
   OpenGL.vcxproj -> D:\openGL\OpenGL\x64\Debug\OpenGL.exe

@@ -1,48 +1,63 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
-#include <string.h>
-//#include <alloca.h>
+#include <string>
+#include <sstream>
+#include <fstream>
 
+#define ASSERT(x) if(!(x)) __debugbreak();
+#define GLCall(x) GLClearError();\
+    x;\
+    ASSERT(GLLogCALL(#x,__FILE__,__LINE__))
 
-//uniform为全局的，在每个着色器程序中独一无二
-//如果你声明了一个uniform却在GLSL代码中没用过，编译器会静默移除这个变量，
-// 导致最后编译出的版本中并不会包含它，这可能导致几个非常麻烦的错误，记住这点！
-//uniform vec4 ourColor;
-
-
-//GLSL编写顶点着色器，源代码硬编码存储于字符串，后续动态编译
-const std::string vertexShaderSourse = R"(
-#version 330 core
-layout (location = 0) in vec3 aPos;
-layout (location = 1) in vec3 aColor;
-
-out vec3 ourColor;
-
-void main(){
-    gl_Position = vec4(aPos, 1.0);
-    ourColor = aColor;
+static void GLClearError() {
+    while (glGetError() != GL_NO_ERROR);
 }
-)";
 
-
-
-//GLSL中存在4个分量，代表空间中的一个坐标，通过vec.x,vec.y,vec.z,vex,w来获取
-//vec.w 使用场景为透视除法（Perspective Division）
-
-//片段着色器
-
-const std::string fragmentShaderSource = R"(
-#version 330 core
-
-out vec4 FragColor;
-in vec3 ourColor;
-
-void main()
-{
-   FragColor = vec4(ourColor, 1.0);
+static bool GLLogCALL(const char* function, const char* file, int line) {
+    while (GLenum error = glGetError()) {
+        std::cout << "[ OpenGL error ] (" << error << ")\n"
+            << "├── [ Error function ] " << function << "\n"
+            << "├── [ Error file ] " << file << "\n"
+            << "└── [ Error line ] " << line << std::endl;
+        return false;
+    }
+    return true;
 }
-)";
+
+struct ShaderProgramSource {
+    std::string vertexShaderSourse;
+    std::string fragmentShaderSource;
+};
+
+static ShaderProgramSource PareShader(const std::string& filepath) {
+    std::ifstream stream(filepath);
+
+    enum class ShaderType {
+        NONE = -1, VERTEX = 0, FRAGMENT = 1
+    };
+
+    std::string line;
+    std::stringstream ss[2];
+    ShaderType type = ShaderType::NONE;
+    while (getline(stream, line)) {
+        //std::string::npos为常量，返回值为-1
+        if (line.find("#shader") != std::string::npos) {
+            if (line.find("vertex") != std::string::npos) {
+                type = ShaderType::VERTEX;
+            }
+            else if (line.find("fragment") != std::string::npos) {
+                type = ShaderType::FRAGMENT;
+            }
+        }
+        else {
+            //直接推入对应的数组ss[0]和ss[1]中，对每次进行换行
+            ss[(int)type] << line << '\n';
+        }
+    }
+    return  { ss[0].str(),ss[1].str() };
+}
+
 
 
 //窗口大小
@@ -80,8 +95,14 @@ static unsigned int CompileShader(unsigned int Type, const std::string& source) 
 
         //检测着色器对象状态名，log输出长度，返回log长度，改变字符串对象信息
         glGetShaderInfoLog(id, length, &length, message);
-        std::cout << "Failed to compile shader!" << std::endl;
+        std::cout << "Failed to compile " 
+            <<(Type== GL_VERTEX_SHADER ? "vertx" : "fragment") 
+            << "shader!" << std::endl;
         std::cout << message << std::endl;
+		//销毁着色器对象
+        glDeleteShader(id);
+        //返回值是无符号整数，所以只能以0值返回，不能返回-1
+        return 0;
     }
      
     return id;
@@ -155,9 +176,17 @@ int main(void)
         return -1;
     }
 
+    //相对路径
+    ShaderProgramSource shaderSource = PareShader("res/shaders/Basic.shader");
+
 
     //着色器程序
-    unsigned int shaderProgram = CreateShaderProgram(vertexShaderSourse, fragmentShaderSource);
+    unsigned int shaderProgram = CreateShaderProgram(shaderSource.vertexShaderSourse, shaderSource.fragmentShaderSource);
+   
+    
+    /*GLCall(glUseProgram(shaderProgram));
+    GLCall(int location = glGetUniformLocation(shaderProgram, "ourColor"));
+    ASSERT(location != -1);*/
 
 
 
@@ -169,16 +198,24 @@ int main(void)
     };
     float vertices2[] = {
         // 位置              // 颜色
-         0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,   // 右下
-        -0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,   // 左下
-         0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f    // 顶部
+         -0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,   // 右下
+        -0.5f, 0.5f, 0.0f,  0.0f, 1.0f, 0.0f,   // 左下
+         0.5f, 0.5f, 0.0f,  0.0f, 0.0f, 1.0f,  // 顶部
+         0.5f, -0.5f, 0.0f,  0.0f, 0.0f, 1.0f // 顶部
+
+
+
+        // // 位置              // 颜色
+        // 0.5f, -0.5f, 0.0f,  0.5f, 0.0f, 0.0f,   // 右下
+        //-0.5f, -0.5f, 0.0f,  0.0f, 0.5f, 0.0f,   // 左下
+        // 0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 0.5f    // 顶部
     };
 
-    //unsigned int indices[] = {
+    unsigned int indices[] = {
     //    //存储的时vertices数组的下标，返回为三角形某顶点的坐标
-    //    0,1,3,//第一个三角形
-    //    1,2,3 //第二个三角形
-    //};
+        0,1,3,//第一个三角形
+        1,2,3 //第二个三角形
+    };
 
 
 
@@ -203,7 +240,7 @@ int main(void)
 
     //复制索引数组到索引缓冲
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    //glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
     //1、设置顶点属性指针
     //(position的顶点属性值，顶点属性大小（vec3），指定数据类型，
@@ -232,14 +269,14 @@ int main(void)
         glClear(GL_COLOR_BUFFER_BIT);
 
         //激活着色器
-        glUseProgram(shaderProgram);
+        GLCall(glUseProgram(shaderProgram));
 
         ////更新uniform颜色
-        //float timeValue = glfwGetTime();
+        float timeValue = glfwGetTime();
         ////通过时间保证数据在0-1之间进行循环（改变颜色）
-        //float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
-        //int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
-        //glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
+        float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
+        int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
+        glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
 
 
         //绘制
@@ -248,9 +285,12 @@ int main(void)
         glLineWidth(2.0f);
         //切换线框模式(GL_LINE)/填充模式（GL_FILL)
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
 
+
+
+        GLCall(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr));
+       // glDrawArrays(GL_TRIANGLES, 0, 3);
+  
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
@@ -373,3 +413,47 @@ int main(void)
 //            << infoLog << std::endl;
 //    }
 //}
+
+
+
+//uniform为全局的，在每个着色器程序中独一无二
+//如果你声明了一个uniform却在GLSL代码中没用过，编译器会静默移除这个变量，
+// 导致最后编译出的版本中并不会包含它，这可能导致几个非常麻烦的错误，记住这点！
+//uniform vec4 ourColor;
+
+
+//GLSL编写顶点着色器，源代码硬编码存储于字符串，后续动态编译
+//const std::string vertexShaderSourse = R"(
+//#version 330 core
+//layout (location = 0) in vec3 aPos;
+//layout (location = 1) in vec3 aColor;
+//
+//out vec3 ourColor;
+//
+//void main(){
+//    gl_Position = vec4(aPos, 1.0);
+//    ourColor = aColor;
+//}
+//)";
+//
+//
+//
+////GLSL中存在4个分量，代表空间中的一个坐标，通过vec.x,vec.y,vec.z,vex,w来获取
+////vec.w 使用场景为透视除法（Perspective Division）
+//
+////片段着色器
+//
+////先绑定顶点着色器，然后顶点着色器输出顶点的颜色属性，构建图元后，片段着色器对顶点间的所有像素进行逐步渲染
+////layout(location = 0) out ver4 FragColor;
+//
+//const std::string fragmentShaderSource = R"(
+//#version 330 core
+//
+//out vec4 FragColor;
+//in vec3 ourColor;
+//
+//void main()
+//{
+//   FragColor = vec4(ourColor, 1.0);
+//}
+//)";
