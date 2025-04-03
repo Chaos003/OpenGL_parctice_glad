@@ -1,4 +1,4 @@
 ﻿  Application.cpp
-D:\openGL\OpenGL\OpenGL\src\Application.cpp(275,25): warning C4244: “初始化”: 从“double”转换到“float”，可能丢失数据
-  glad.c
+D:\openGL\OpenGL\OpenGL\src\Application.cpp(157,25): warning C4244: “初始化”: 从“double”转换到“float”，可能丢失数据
+LINK : warning LNK4098: 默认库“MSVCRT”与其他库的使用冲突；请使用 /NODEFAULTLIB:library
   OpenGL.vcxproj -> D:\openGL\OpenGL\x64\Debug\OpenGL.exe

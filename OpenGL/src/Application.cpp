@@ -4,59 +4,8 @@
 #include <string>
 #include <sstream>
 #include <fstream>
+#include "shader.h"
 
-#define ASSERT(x) if(!(x)) __debugbreak();
-#define GLCall(x) GLClearError();\
-    x;\
-    ASSERT(GLLogCALL(#x,__FILE__,__LINE__))
-
-static void GLClearError() {
-    while (glGetError() != GL_NO_ERROR);
-}
-
-static bool GLLogCALL(const char* function, const char* file, int line) {
-    while (GLenum error = glGetError()) {
-        std::cout << "[ OpenGL error ] (" << error << ")\n"
-            << "├── [ Error function ] " << function << "\n"
-            << "├── [ Error file ] " << file << "\n"
-            << "└── [ Error line ] " << line << std::endl;
-        return false;
-    }
-    return true;
-}
-
-struct ShaderProgramSource {
-    std::string vertexShaderSourse;
-    std::string fragmentShaderSource;
-};
-
-static ShaderProgramSource PareShader(const std::string& filepath) {
-    std::ifstream stream(filepath);
-
-    enum class ShaderType {
-        NONE = -1, VERTEX = 0, FRAGMENT = 1
-    };
-
-    std::string line;
-    std::stringstream ss[2];
-    ShaderType type = ShaderType::NONE;
-    while (getline(stream, line)) {
-        //std::string::npos为常量，返回值为-1
-        if (line.find("#shader") != std::string::npos) {
-            if (line.find("vertex") != std::string::npos) {
-                type = ShaderType::VERTEX;
-            }
-            else if (line.find("fragment") != std::string::npos) {
-                type = ShaderType::FRAGMENT;
-            }
-        }
-        else {
-            //直接推入对应的数组ss[0]和ss[1]中，对每次进行换行
-            ss[(int)type] << line << '\n';
-        }
-    }
-    return  { ss[0].str(),ss[1].str() };
-}
 
 
 
@@ -76,68 +25,6 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 }
 
-
-//通过传入GLSL代码进行创建着色器对象
-static unsigned int CompileShader(unsigned int Type, const std::string& source) {
-    unsigned int id = glCreateShader(Type);//对应传入的绑定着色器对象
-    const char* src = source.c_str();
-    glShaderSource(id, 1, &src, nullptr);
-    glCompileShader(id);
-
-
-    //检测着色器编译错误
-    int result;
-    glGetShaderiv(id, GL_COMPILE_STATUS, &result);
-    if (result == GL_FALSE) {
-        int length;
-        glGetShaderiv(id, GL_INFO_LOG_LENGTH, &length);
-        char* message = (char*)alloca(sizeof(char) * length);
-
-        //检测着色器对象状态名，log输出长度，返回log长度，改变字符串对象信息
-        glGetShaderInfoLog(id, length, &length, message);
-        std::cout << "Failed to compile " 
-            <<(Type== GL_VERTEX_SHADER ? "vertx" : "fragment") 
-            << "shader!" << std::endl;
-        std::cout << message << std::endl;
-		//销毁着色器对象
-        glDeleteShader(id);
-        //返回值是无符号整数，所以只能以0值返回，不能返回-1
-        return 0;
-    }
-     
-    return id;
-}
-
-
-//创建着色器程序链接各个着色器
-static unsigned int CreateShaderProgram(const std::string & vertexShaderSource,const std::string &fragmentShaderSource){
-    //着色器程序
-    unsigned int shaderProgram = glCreateProgram();
-    //顶点着色器
-    unsigned int vertexShader = CompileShader(GL_VERTEX_SHADER, vertexShaderSource);
-    //片段着色器
-    unsigned int fragmentShader = CompileShader(GL_FRAGMENT_SHADER, fragmentShaderSource);
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-
-
-    //检测着色器程序链接错误
-    int result;
-    glGetShaderiv(shaderProgram, GL_LINK_STATUS, &result);
-    if (result == GL_FALSE) {
-        int length;
-        glGetShaderiv(shaderProgram, GL_INFO_LOG_LENGTH, &length);
-        char* message = (char*)alloca(sizeof(char) * length);
-
-        //检测着色器对象状态名，log输出长度，返回log长度，改变字符串对象信息
-        glGetShaderInfoLog(shaderProgram, length, &length, message);
-        std::cout << "Failed to link shaderprogram!" << std::endl;
-        std::cout << message << std::endl;
-    }
-
-    return shaderProgram;
-}
 
 
 
@@ -176,13 +63,8 @@ int main(void)
         return -1;
     }
 
-    //相对路径
-    ShaderProgramSource shaderSource = PareShader("res/shaders/Basic.shader");
 
-
-    //着色器程序
-    unsigned int shaderProgram = CreateShaderProgram(shaderSource.vertexShaderSourse, shaderSource.fragmentShaderSource);
-   
+    Shader shader("res/shaders/3.3.vertex.shader", "res/shaders/3.3.fragment.shader");
     
     /*GLCall(glUseProgram(shaderProgram));
     GLCall(int location = glGetUniformLocation(shaderProgram, "ourColor"));
@@ -269,14 +151,14 @@ int main(void)
         glClear(GL_COLOR_BUFFER_BIT);
 
         //激活着色器
-        GLCall(glUseProgram(shaderProgram));
+        shader.use();
 
         ////更新uniform颜色
         float timeValue = glfwGetTime();
         ////通过时间保证数据在0-1之间进行循环（改变颜色）
-        float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
-        int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
-        glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
+ /*       float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
+        int vertexColorLocation = glGetUniformLocation(shader.ID, "ourColor");
+        glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);*/
 
 
         //绘制
@@ -303,7 +185,7 @@ int main(void)
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &EBO);
     glDeleteBuffers(1, &VBO);
-    glDeleteProgram(shaderProgram);
+    //glDeleteProgram(shaderProgram);
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
     glfwTerminate();
@@ -457,3 +339,57 @@ int main(void)
 //   FragColor = vec4(ourColor, 1.0);
 //}
 //)";
+
+/*
+#define ASSERT(x) if(!(x)) __debugbreak();
+#define GLCall(x) GLClearError();\
+    x;\
+    ASSERT(GLLogCALL(#x,__FILE__,__LINE__))
+
+static void GLClearError() {
+    while (glGetError() != GL_NO_ERROR);
+}
+
+static bool GLLogCALL(const char* function, const char* file, int line) {
+    while (GLenum error = glGetError()) {
+        std::cout << "[ OpenGL error ] (" << error << ")\n"
+            << "├── [ Error function ] " << function << "\n"
+            << "├── [ Error file ] " << file << "\n"
+            << "└── [ Error line ] " << line << std::endl;
+        return false;
+    }
+    return true;
+}
+
+struct ShaderProgramSource {
+    std::string vertexShaderSourse;
+    std::string fragmentShaderSource;
+};
+
+static ShaderProgramSource PareShader(const std::string& filepath) {
+    std::ifstream stream(filepath);
+
+    enum class ShaderType {
+        NONE = -1, VERTEX = 0, FRAGMENT = 1
+    };
+
+    std::string line;
+    std::stringstream ss[2];
+    ShaderType type = ShaderType::NONE;
+    while (getline(stream, line)) {
+        //std::string::npos为常量，返回值为-1
+        if (line.find("#shader") != std::string::npos) {
+            if (line.find("vertex") != std::string::npos) {
+                type = ShaderType::VERTEX;
+            }
+            else if (line.find("fragment") != std::string::npos) {
+                type = ShaderType::FRAGMENT;
+            }
+        }
+        else {
+            //直接推入对应的数组ss[0]和ss[1]中，对每次进行换行
+            ss[(int)type] << line << '\n';
+        }
+    }
+    return  { ss[0].str(),ss[1].str() };
+}*/
