@@ -1,11 +1,22 @@
-#include <glad/glad.h>
+#include "glad/glad.h"
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include <string>
 #include <sstream>
 #include <fstream>
 #include "shader.h"
+#include "VertexBuffer.h"
+#include "IndexBuffer.h"
+#include "VertexArray.h"
+#include "VertexBufferLayout.h"
+#include "Renderer.h"
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 
 
@@ -62,132 +73,251 @@ int main(void)
         std::cerr << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
-
-
-    Shader shader("res/shaders/3.3.vertex.shader", "res/shaders/3.3.fragment.shader");
+    //float vertices2[] = {
+    //    // 位置              // 颜色               //纹理
+    //     0.5f, 0.5, 0.0f,    0.5, 0.0f, 0.0f,    1.0f,1.0f, // 右上
+    //     0.5, -0.5, 0.0f,   0.0f, 0.5, 0.0f,    1.0f,0.0f, // 右下
+    //     -0.5, 0.5, 0.0f,   0.0f, 0.0f, 0.5,    0.0f,1.0f, // 左上
+    //     -0.5, -0.5, 0.0f,  0.0f, 0.0f, 0.5,    0.0f,0.0f  // 左下
+    //};
     
-    /*GLCall(glUseProgram(shaderProgram));
-    GLCall(int location = glGetUniformLocation(shaderProgram, "ourColor"));
-    ASSERT(location != -1);*/
-
-
+    //深度设置
+    glEnable(GL_DEPTH_TEST);
 
     float vertices[] = {
-    0.5f, 0.5f, 0.0f,   // 右上角
-    0.5f, -0.5f, 0.0f,  // 右下角
-    -0.5f, -0.5f, 0.0f, // 左下角
-    -0.5f, 0.5f, 0.0f   // 左上角
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
     };
-    float vertices2[] = {
-        // 位置              // 颜色
-         -0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,   // 右下
-        -0.5f, 0.5f, 0.0f,  0.0f, 1.0f, 0.0f,   // 左下
-         0.5f, 0.5f, 0.0f,  0.0f, 0.0f, 1.0f,  // 顶部
-         0.5f, -0.5f, 0.0f,  0.0f, 0.0f, 1.0f // 顶部
 
-
-
-        // // 位置              // 颜色
-        // 0.5f, -0.5f, 0.0f,  0.5f, 0.0f, 0.0f,   // 右下
-        //-0.5f, -0.5f, 0.0f,  0.0f, 0.5f, 0.0f,   // 左下
-        // 0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 0.5f    // 顶部
+    glm::vec3 cubePositions[] = {
+       glm::vec3(0.0f,  0.0f,  0.0f),
+       glm::vec3(2.0f,  5.0f, -15.0f),
+       glm::vec3(-1.5f, -2.2f, -2.5f),
+       glm::vec3(-3.8f, -2.0f, -12.3f),
+       glm::vec3(2.4f, -0.4f, -3.5f),
+       glm::vec3(-1.7f,  3.0f, -7.5f),
+       glm::vec3(1.3f, -2.0f, -2.5f),
+       glm::vec3(1.5f,  2.0f, -2.5f),
+       glm::vec3(1.5f,  0.2f, -1.5f),
+       glm::vec3(-1.3f,  1.0f, -1.5f)
     };
 
-    unsigned int indices[] = {
-    //    //存储的时vertices数组的下标，返回为三角形某顶点的坐标
-        0,1,3,//第一个三角形
-        1,2,3 //第二个三角形
-    };
+    //unsigned int indices[] = {
+    //    //    //存储的时vertices数组的下标，返回为三角形某顶点的坐标
+    //        0,1,2,//第一个三角形
+    //        1,3,2 //第二个三角形
+    //};
 
-
-
-    //顶点数组对象（应该优先绑定）
-    unsigned int VAO;
-    //顶点缓冲对象
-    unsigned int VBO;
-    //元素缓冲对象
-    unsigned int EBO;
-
-    
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
-
-    //绑定顶点缓冲对象，先绑定VAO
-    glBindVertexArray(VAO);
-
-    //复制顶点数据到缓冲的内存
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices2), vertices2, GL_STATIC_DRAW);
-
-    //复制索引数组到索引缓冲
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    //1、设置顶点属性指针
-    //(position的顶点属性值，顶点属性大小（vec3），指定数据类型，
-    // 标准化映射（GL_TRUE代表所有数据会被映射到0-1之间），
-    // 步长：组数据之间的字节间隔数，
-    // 数据强制类型转换解决缓冲中起始位置偏移)
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-
-    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    //glBindBuffer(GL_ARRAY_BUFFER, 0);
-    //glBindVertexArray(0);
-
-
-   
-    //循环渲染
-    /* Loop until the user closes the window */
-    while (!glfwWindowShouldClose(window))
     {
-        processInput(window);
 
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        /* Render here */
-        glClear(GL_COLOR_BUFFER_BIT);
+        Shader shader("res/shaders/3.3.vertex.shader", "res/shaders/3.3.fragment.shader");
 
-        //激活着色器
+        //顶点数组对象（应该优先绑定）
+        VertexArray va;
+        va.vertex_Array_Bind();
+
+        VertexBuffer vertex_buffer(vertices, sizeof(vertices));
+   /*     IndexBuffer index_buffer(indices, sizeof(indices) / sizeof(indices[0]));*/
+
+        VertexBufferLayout layout;
+        layout.push<float>(3);
+        layout.push<float>(2);
+
+        std::cout << layout.getStride() << std::endl;
+
+        va.add_vertex_Buffer(vertex_buffer, layout);
+
+        //第一重纹理单元
+        unsigned int texture1, texture2;
+        glGenTextures(1, &texture1);
+        glBindTexture(GL_TEXTURE_2D, texture1);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+
+        int width, height, nrChannels;
+        stbi_set_flip_vertically_on_load(true);
+
+        unsigned char* data = stbi_load("source/123123.jpg", &width, &height, &nrChannels, 0);
+
+        if (data) {
+
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+            glGenerateMipmap(GL_TEXTURE_2D);
+        }
+        else {
+            std::cout << "Failed to load texture" << std::endl;
+        }
+        stbi_image_free(data);
+
+        //第二重纹理单元
+        glGenTextures(1, &texture2);
+        glBindTexture(GL_TEXTURE_2D, texture2);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		data = stbi_load("source/456.png", &width, &height, &nrChannels, 0);
+        if (data) {
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+            glGenerateMipmap(GL_TEXTURE_2D);
+        }
+        else {
+            std::cout << "Failed to load texture" << std::endl;
+        }
+        stbi_image_free(data);
+
+
+
+
         shader.use();
+        //手动设置
+        //glUniform1i(glGetUniformLocation(shader.getShaderID(), "texture1"), 0);
+		shader.setInt("texture1", 0);
+        shader.setInt("texture2", 1);
 
-        ////更新uniform颜色
-        float timeValue = glfwGetTime();
-        ////通过时间保证数据在0-1之间进行循环（改变颜色）
- /*       float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
-        int vertexColorLocation = glGetUniformLocation(shader.ID, "ourColor");
-        glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);*/
+        //循环渲染
+        /* Loop until the user closes the window */
+        while (!glfwWindowShouldClose(window))
+        {
+            processInput(window);
+
+            glClearColor(0.2f, 0.3f, 0.3f, 0.8f);
+            /* Render here */
+          
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
-        //绘制
-        glBindVertexArray(VAO);
-        //设置线宽
-        glLineWidth(2.0f);
-        //切换线框模式(GL_LINE)/填充模式（GL_FILL)
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, texture1);
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, texture2);
+
+            shader.use();
+
+            //正射投影矩阵
+            //glm::ortho(0.0f, 800.0f, 0.0f, 600.0f, 0.1f, 100.0f);
+            //透视投影矩阵
+            //glm::mat4 proj = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 100.0f);
+
+            //glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+            //glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
+            //glm::vec3 cameraDirection = glm::normalize(cameraPos - cameraTarget);
+            //glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+            //glm::vec3 cameraRight = glm::normalize(glm::cross(up, cameraDirection));
+            //glm::vec3 cameraUp = glm::cross(cameraDirection, cameraRight);
+
+
+            glm::mat4 view = glm::mat4(1.0f); 
+            float radius = 10.0f;
+            float camX = sin(glfwGetTime()) * radius;
+            float camZ = cos(glfwGetTime()) * radius;
+            view = glm::lookAt(glm::vec3(camX, 0.0, camZ), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+
+            glm::mat4 projection = glm::mat4(1.0f);
+            projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+            //view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+            // pass transformation matrices to the shader
+            shader.setMat4("projection", projection); // note: currently we set the projection matrix each frame, but since the projection matrix rarely changes it's often best practice to set it outside the main loop only once.
+            shader.setMat4("view", view);
+
+            // render boxes
+            //绘制
+            va.vertex_Array_Bind();
+            //glBindVertexArray(va.getVAO());
+            for (unsigned int i = 0; i < 10; i++)
+            {
+                // calculate the model matrix for each object and pass it to shader before drawing
+                glm::mat4 model = glm::mat4(1.0f);
+                model = glm::translate(model, cubePositions[i]);
+                float angle = 20.0f * i;
+                model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+                shader.setMat4("model", model);
+
+                glDrawArrays(GL_TRIANGLES, 0, 36);
+            }
 
 
 
-        GLCall(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr));
-       // glDrawArrays(GL_TRIANGLES, 0, 3);
-  
+            //激活着色器
+            //shader.use();
 
-        /* Swap front and back buffers */
-        glfwSwapBuffers(window);
 
-        /* Poll for and process events */
-        glfwPollEvents();
+       
+			
+       
+            
+            //设置线宽
+            //glLineWidth(2.0f);
+            //切换线框模式(GL_LINE)/填充模式（GL_FILL)
+            //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+           
+
+            //GLCall(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
+            // 
+            // glDrawArrays(GL_TRIANGLES, 0, 3);
+
+
+             /* Swap front and back buffers */
+            glfwSwapBuffers(window);
+
+            /* Poll for and process events */
+            glfwPollEvents();
+        }
+
+        //释放所有资源
+        //glDeleteVertexArrays(1, &VAO);
+        //vertex_buffer.~VertexBuffer();
+        //index_buffer.~IndexBuffer();
+        //glDeleteProgram(shaderProgram);
+
+        // glfw: terminate, clearing all previously allocated GLFW resources.
     }
-
-    //释放所有资源
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &EBO);
-    glDeleteBuffers(1, &VBO);
-    //glDeleteProgram(shaderProgram);
-
-    // glfw: terminate, clearing all previously allocated GLFW resources.
     glfwTerminate();
     return 0;
 }
@@ -297,6 +427,13 @@ int main(void)
 //}
 
 
+////更新uniform颜色
+            //float timeValue = glfwGetTime();
+            ////通过时间保证数据在0-1之间进行循环（改变颜色）
+     /*       float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
+            int vertexColorLocation = glGetUniformLocation(shader.ID, "ourColor");
+            glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 0.8f);*/
+
 
 //uniform为全局的，在每个着色器程序中独一无二
 //如果你声明了一个uniform却在GLSL代码中没用过，编译器会静默移除这个变量，
@@ -393,3 +530,47 @@ static ShaderProgramSource PareShader(const std::string& filepath) {
     }
     return  { ss[0].str(),ss[1].str() };
 }*/
+
+
+//glGenBuffers(1, &VBO);
+//glGenBuffers(1, &EBO);
+//
+////绑定顶点缓冲对象，先绑定VAO
+//glBindVertexArray(VAO);
+//
+////复制顶点数据到缓冲的内存
+//glBindBuffer(GL_ARRAY_BUFFER, VBO);
+//glBufferData(GL_ARRAY_BUFFER, sizeof(vertices2), vertices2, GL_STATIC_DRAW);
+//
+////复制索引数组到索引缓冲
+//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+
+//unsigned int VAO;
+//glGenVertexArrays(1, &VAO);
+//glBindVertexArray(VAO); //绝对要绑定顶点数组对象
+//
+//
+//
+//VertexBuffer vertex_buffer(vertices2, sizeof(vertices2));
+//
+//IndexBuffer index_buffer(indices, sizeof(indices) / sizeof(indices[0]));
+//
+//
+//
+//
+//
+////1、设置顶点属性指针
+////(position的顶点属性值，顶点属性大小（vec3），指定数据类型，
+//// 标准化映射（GL_TRUE代表所有数据会被映射到0-1之间），
+//// 步长：组数据之间的字节间隔数，
+//// 数据强制类型转换解决缓冲中起始位置偏移)
+//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+//glEnableVertexAttribArray(0);
+//glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+//glEnableVertexAttribArray(1);
+
+//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+//glBindBuffer(GL_ARRAY_BUFFER, 0);
+//glBindVertexArray(0);

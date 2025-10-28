@@ -1,4 +1,9 @@
 ﻿  Application.cpp
-D:\openGL\OpenGL\OpenGL\src\Application.cpp(157,25): warning C4244: “初始化”: 从“double”转换到“float”，可能丢失数据
-LINK : warning LNK4098: 默认库“MSVCRT”与其他库的使用冲突；请使用 /NODEFAULTLIB:library
-  OpenGL.vcxproj -> D:\openGL\OpenGL\x64\Debug\OpenGL.exe
+D:\openGL\OpenGL\OpenGL\src\Application.cpp(258,24): warning C4244: “初始化”: 从“double”转换到“float”，可能丢失数据
+D:\openGL\OpenGL\OpenGL\src\Application.cpp(259,24): warning C4244: “初始化”: 从“double”转换到“float”，可能丢失数据
+  Texture.cpp
+D:\openGL\OpenGL\OpenGL\src\Texture.cpp(22,40): error C2572: “Texture::Bind”: 重定义默认参数 : 参数 1
+      D:\openGL\OpenGL\OpenGL\src\Texture.h(19,7):
+      参见“Texture::Bind”的声明
+  
+  正在生成代码...

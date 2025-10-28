@@ -1,2 +1,7 @@
 D:\openGL\OpenGL\OpenGL\src\Application.cpp;D:\openGL\OpenGL\OpenGL\x64\Debug\Application.obj
 D:\openGL\OpenGL\OpenGL\src\glad.c;D:\openGL\OpenGL\OpenGL\x64\Debug\glad.obj
+D:\openGL\OpenGL\OpenGL\src\IndexBuffer.cpp;D:\openGL\OpenGL\OpenGL\x64\Debug\IndexBuffer.obj
+D:\openGL\OpenGL\OpenGL\src\Renderer.cpp;D:\openGL\OpenGL\OpenGL\x64\Debug\Renderer.obj
+D:\openGL\OpenGL\OpenGL\src\shader.cpp;D:\openGL\OpenGL\OpenGL\x64\Debug\shader.obj
+D:\openGL\OpenGL\OpenGL\src\VertexArray.cpp;D:\openGL\OpenGL\OpenGL\x64\Debug\VertexArray.obj
+D:\openGL\OpenGL\OpenGL\src\VertexBuffer.cpp;D:\openGL\OpenGL\OpenGL\x64\Debug\VertexBuffer.obj
